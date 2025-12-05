@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>🧍 Skeleton Action Recognition Demo</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>🧍 Skeleton Action Recognition Demo</h1>
+
+    <div class="upload-box">
+        <h3>📂 업로드할 동영상 선택</h3>
+        <input type="file" id="videoInput" name="video" accept="video/mp4">
+        <p id="fileName">
+            <strong>파일명:</strong>
+            <span id="fileNameValue"></span>
+        </p>
+
+        <p id="trueLabel">
+            <strong>실제 라벨:</strong>
+            <span id="trueLabelValue"></span>
+        </p>
+    </div>
+
+    <div class="video-wrapper">
+        <div class="video-box">
+            <video id="videoPlayer" controls loop autoplay muted></video>
+        </div>
+
+        <div id="resultBox" class="result-box hidden">
+            <h3>📌 예측 결과</h3>
+            <p id="predictedLabel"></p>
+            <p id="comparison"></p>
+            <div id="probTable"></div>
+        </div>
+    </div>
+
+    <button class="btn" onclick="sendVideo()">예측하기</button>
+
+    
+</div>
+
+<script>
+    // 라벨 → 실제 행동 이름 매핑
+    const ACTION_MAP = {
+        1: "Drink Water",
+        2: "Eat Meal",
+        8: "Sit Down",
+        9: "Stand Up",
+        11: "Reading",
+        12: "Writing",
+        13: "Tear Up Paper",
+        28: "Phone Call",
+        29: "Play With Phone",
+        30: "Type On A Keyboard",
+        33: "Check Time From Watch",
+        41: "Sneeze/Cough"
+    };
+
+    const input = document.getElementById("videoInput");
+    const fileNameTag = document.getElementById("fileName");
+    const trueLabelTag = document.getElementById("trueLabel");
+    const videoPlayer = document.getElementById("videoPlayer");
+
+    let uploadedFile = null;
+
+    input.addEventListener("change", function() {
+
+        console.log("📥 파일 업로드됨");
+
+        uploadedFile = this.files[0];
+
+        if (!uploadedFile) {
+            console.error("❌ 업로드된 파일이 없음");
+            return;
+        }
+        document.getElementById("fileNameValue").textContent = uploadedFile.name;
+
+        const match = uploadedFile.name.match(/A(\d{3})/);
+        if (match) {
+            const trueNum = parseInt(match[1]);
+            const trueText = ACTION_MAP[trueNum] || "Unknown";
+
+            document.getElementById("trueLabelValue").textContent =
+                `${trueNum} (${trueText})`;
+        }
+
+        const url = URL.createObjectURL(uploadedFile);
+        videoPlayer.src = url;
+
+        videoPlayer.loop = true;
+        videoPlayer.autoplay = true;
+        videoPlayer.muted = true;
+
+        videoPlayer.load();
+
+        videoPlayer.play().then(() => {
+            console.log("▶ 영상 재생 시작");
+        }).catch(err => {
+            console.error("⚠ autoplay 실패:", err);
+        });
+    });
+
+    function sendVideo() {
+    if (!uploadedFile) {
+        alert("동영상을 업로드하세요!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("video", uploadedFile);
+
+    fetch("/predict", {
+        method: "POST",
+        body: formData
+    })
+    .then(async response => {
+        console.log("📥 서버 응답 코드:", response.status);
+
+        // 서버 500 에러면 HTML을 JSON으로 읽지 말고 텍스트로 읽기
+        if (!response.ok) {
+            const text = await response.text();
+            console.error("❌ 서버 에러 내용:\n", text);
+            alert("서버 오류 발생! 콘솔을 확인하세요.");
+            return;
+        }
+
+        return response.json();
+    })
+    .then(result => {
+        console.log("🔍 서버에서 받은 JSON:", result);   // 임시 디버그 추가
+        if (!result) return;
+
+        document.getElementById("resultBox").classList.remove("hidden");
+
+        const predValue = Number(result.pred);   
+        const predText = ACTION_MAP[predValue] || "Unknown";   
+
+        document.getElementById("predictedLabel").innerHTML =
+            `<strong>모델 예측 라벨:</strong> <strong>${predValue}</strong> (${predText})`;
+
+        const trueLabel = parseInt(uploadedFile.name.match(/A(\d{3})/)[1]);
+
+        if (trueLabel === result.pred) {
+            document.getElementById("comparison").innerHTML =
+                "<span class='correct'>✅ 정답입니다!</span>";
+        } else {
+            document.getElementById("comparison").innerHTML =
+                "<span class='wrong'>❌ 틀렸습니다!</span>";
+        }
+        
+        const probs = result.probs;
+        const ACTIONS = [0,1,7,8,10,11,12,27,28,29,32,40];
+
+let tableHTML = `
+<h4>📊 클래스별 확률</h4>
+<table border='1' style='border-collapse: collapse; width: 100%; text-align:center;'>
+<colgroup>
+    <col style="width: 100px;">
+    <col style="width: 220px;">
+    <col style="width: 100px;">
+</colgroup>
+<tr>
+    <th> </th>
+    <th>라벨명</th>
+    <th>확률</th>
+</tr>
+`;
+
+
+
+        for (let i = 0; i < probs.length; i++) {
+            const trueLabelNum = ACTIONS[i] + 1;
+            const actionName = ACTION_MAP[trueLabelNum] || "Unknown";
+
+            tableHTML += `
+            <tr>
+                <td>${trueLabelNum}</td>
+                <td style="white-space: normal; word-wrap: break-word;">${actionName}</td>
+                <td>${(probs[i] * 100).toFixed(2)}%</td>
+            </tr>`;
+
+        }
+
+        tableHTML += "</table>";
+
+        document.getElementById("probTable").innerHTML = tableHTML;
+        })
+        .catch(err => {
+            console.error("❌ fetch 에러:", err);
+        });
+
+}
+</script>
+
+
+</body>
+</html>
