@@ -1,0 +1,101 @@
+
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #ffffff;
+    font-family: "Noto Sans KR", sans-serif;
+    overflow: hidden;  
+}
+
+.container {
+    height: 100vh;      /* 전체 화면 */
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* 위에서부터 시작 */
+    align-items: center;
+    padding-top: 20px;
+    box-sizing: border-box;
+}
+
+h1 {
+    margin: 0;
+    margin-bottom: 10px;   /* 줄임 */
+}
+
+.upload-box {
+    margin: 0;
+    padding: 5px;
+}
+
+.upload-box h3 {
+    margin: 5px;
+}
+
+.video-box {
+    margin-top: 30px;
+}
+
+.video-box video {
+    width: 340px;
+    height: 340px;
+    border-radius: 10px;
+    border: 3px solid #ddd;
+    object-fit: contain;
+}
+.video-wrapper {
+    position: relative;
+    width: 400px;   /* video width와 동일 */
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+/* 예측 결과 박스: 영상 오른쪽에 고정 */
+#resultBox {
+    position: absolute;
+    left: 420px;        /* 영상 오른편에 위치 */
+    top: -220px;
+    width: 220px;
+}
+
+
+.btn {
+    background: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 17px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.btn:hover {
+    background: #0056b3;
+}
+
+.result-box {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+
+.correct {
+    font-size: 32px;
+    color: #0a9900;
+    font-weight: 700;
+}
+
+.wrong {
+    font-size: 32px;
+    color: #d00000;
+    font-weight: 700;
+}
+
+.hidden {
+    display: none;
+}
